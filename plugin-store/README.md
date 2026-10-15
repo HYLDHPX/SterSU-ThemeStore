@@ -10,12 +10,12 @@ executable code downloaded from this directory.
 - `catalog-v1.json` and `catalog-v1.sig` preserve the signed nine-plugin
   catalog for older Manager builds. The lost legacy key means this historical
   catalog cannot be edited or re-signed.
-- `catalog-v2.json` and `catalog-v2.sig` provide the active six-plugin catalog,
-  including `packages/pathmask-lkm.ksplugin` (LKM hidden-path configuration).
+- `catalog-v2.json` and `catalog-v2.sig` provide the active five-plugin catalog.
 - `image-tools`, `cpu-spoof`, `graphics-renderer`, and `ai-chat` were retired
   from the store on 2026-10-09. Their package files are no longer published.
-- The new plugin requires Manager and ksud version code 33000 or newer,
-  LKM mode, and the supported Pathmask runtime on the device.
+- `pathmask-lkm` was removed from the store on 2026-10-15. Its package is no
+  longer published; existing installed records and device configuration are
+  retained so users are not disrupted by a catalog change.
 - The v2 catalog is signed with the replacement Ed25519 key introduced on
   2026-10-07. Updated Managers trust both the replacement and legacy pinned
   public keys and bundle the signed v2 catalog for offline listing.

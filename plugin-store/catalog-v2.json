@@ -1,7 +1,7 @@
 {
   "schema": "io.github.fixz.apkesu.plugin-catalog",
   "version": 1,
-  "generatedAt": 1791536313902,
+  "generatedAt": 1792029602859,
   "plugins": [
     {
       "id": "rescue-protection",
@@ -99,26 +99,6 @@
       "downloadUrl": "https://raw.githubusercontent.com/fixz232/SterSU-ThemeStore/main/plugin-store/packages/app-freeze.ksplugin",
       "sha256": "0bb5e9c9ec9affaf7f72ca94d9b9e5a7b111b9f6d0f77b98fc843a8439175c7c",
       "sizeBytes": 716
-    },
-    {
-      "id": "pathmask-lkm",
-      "version": 1,
-      "name": "LKM 隐藏路径配置",
-      "summary": "在 LKM 模式配置 Pathmask 的隐藏路径、应用范围与自动加载。",
-      "description": "解锁管理器中的 LKM 隐藏路径配置页面，包括路径与应用列表、导入导出、运行诊断和自动加载控制。插件是经过校验的能力描述文件；实际 Pathmask 运行时由设备上的 ksud 提供，不会在修补镜像时附加隐藏路径模块。GKI 模式请使用原有的 SUSFS 管理页面。",
-      "instructions": [
-        "确认设备为 LKM 模式、非后加载模式，并已安装 33000 或更高版本的 ksud。",
-        "安装后打开设置 > 挂载与隐藏 > 隐藏路径配置，添加目标路径与应用后应用，并检查诊断结果。",
-        "移除插件时管理器会关闭自动加载并卸载正在运行的 Pathmask；若无法确认已停止，则保留插件。已保存的路径配置会保留。"
-      ],
-      "slots": [
-        "mount-hide.pathmask-lkm"
-      ],
-      "minManagerVersionCode": 33000,
-      "minKsudVersionCode": 33000,
-      "downloadUrl": "https://raw.githubusercontent.com/fixz232/SterSU-ThemeStore/main/plugin-store/packages/pathmask-lkm.ksplugin",
-      "sha256": "e7060557c01f34a277ad7272039f4f740a9606cf571b5e0faab809caf9a14e89",
-      "sizeBytes": 1281
     }
   ]
 }
