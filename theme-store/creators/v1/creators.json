@@ -1,7 +1,7 @@
 {
   "schema": "io.github.fixz.apkesu.theme-creators",
   "version": 1,
-  "generatedAt": 1784885820762,
+  "generatedAt": 1792381765844,
   "reviewer": "fixz232",
   "creators": [
     {
@@ -14,6 +14,12 @@
       "github": "hyldhpx",
       "displayName": "回忆里的海平线",
       "approvedAt": 1784885820762,
+      "status": "approved"
+    },
+    {
+      "github": "mocheng778",
+      "displayName": "莫晨",
+      "approvedAt": 1792381765844,
       "status": "approved"
     },
     {
