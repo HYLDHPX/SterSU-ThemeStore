@@ -1,7 +1,7 @@
 {
   "schema": "io.github.fixz.apkesu.theme-catalog",
   "version": 1,
-  "generatedAt": 1792758310119,
+  "generatedAt": 1792759651977,
   "categories": [
     {
       "id": "anime",
@@ -9,6 +9,42 @@
     }
   ],
   "themes": [
+    {
+      "id": "rikka-mix",
+      "name": "六花混合",
+      "author": {
+        "id": "mocheng778",
+        "name": "莫辰",
+        "profileUrl": "https://github.com/Mocheng778",
+        "avatarUrl": "https://github.com/fixz232/SterSU-ThemeStore/releases/download/theme-rikka-mix-v1/author.png",
+        "bio": ""
+      },
+      "description": "以小鸟游六花为主的混合动漫主题，包含主页卡片、导航图标、页面背景与侧栏图片，使用侧栏小组件布局。",
+      "category": "anime",
+      "tags": [
+        "六花",
+        "混合",
+        "动漫",
+        "侧栏小组件"
+      ],
+      "versionCode": 1,
+      "versionName": "1.0.0",
+      "packageSchema": "io.github.fixz.apkesu.theme",
+      "packageVersion": 7,
+      "minManagerVersionCode": 33200,
+      "maxManagerVersionCode": null,
+      "coverUrl": "https://github.com/fixz232/SterSU-ThemeStore/releases/download/theme-rikka-mix-v1/cover.webp",
+      "screenshots": [],
+      "downloadUrl": "https://github.com/fixz232/SterSU-ThemeStore/releases/download/theme-rikka-mix-v1/rikka-mix-v1.kstheme",
+      "sha256": "07b744820c6fcdd3abfc840312e8d6571085c686accddc03e2bd5ec6c2b3b936",
+      "sizeBytes": 19307076,
+      "license": "LicenseRef-All-Rights-Reserved",
+      "changelog": "首次发布 v1.0.0。保留原始图片与主题设置，作者署名为“莫辰”，移除设备本地路径。",
+      "publishedAt": 1792759651977,
+      "status": "published",
+      "featured": false,
+      "downloadCount": 0
+    },
     {
       "id": "shiroko-memory-horizon-dark",
       "name": "白子（暗色）",
