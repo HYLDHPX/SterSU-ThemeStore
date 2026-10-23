@@ -6,7 +6,7 @@ The cloud store is a signed-by-hash catalog hosted in this repository. Theme pac
 
 The repository also publishes SterSU interface styles and declarative Manager plugin descriptors. See `interface-styles/` and `plugin-store/`; these packages contain data-only resources and are validated by the Manager before installation.
 
-> Recovery status (2026-10-07): the interface-style catalog contains 29 verified entries, including Windows Fluent and Sidebar widgets. The previous cloud-theme Release assets were not present in the local backup and their old URLs returned 404 during recovery, so the cloud-theme catalog remains empty until maintainers or creators republish verified `.kstheme` files.
+> Cloud-theme publishing resumed on 2026-10-23 with the verified Shiroko dark theme by hyldhpx. Packages remain in GitHub Releases; the catalog records their exact byte count and SHA-256. Theme artwork retains its own rights and is not relicensed by this repository's software license.
 
 ## Trust model
 

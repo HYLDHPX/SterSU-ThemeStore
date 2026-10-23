@@ -139,7 +139,7 @@ def validate_semantics(catalog: dict, previous: dict | None) -> list[dict]:
             raise ValidationFailure(f"{label}.category is not declared")
         if theme.get("packageSchema") != PACKAGE_SCHEMA:
             raise ValidationFailure(f"{label}.packageSchema is unsupported")
-        if not isinstance(theme.get("packageVersion"), int) or not 1 <= theme["packageVersion"] <= 6:
+        if not isinstance(theme.get("packageVersion"), int) or not 1 <= theme["packageVersion"] <= 7:
             raise ValidationFailure(f"{label}.packageVersion is unsupported")
         if not isinstance(theme.get("versionCode"), int) or theme["versionCode"] < 1:
             raise ValidationFailure(f"{label}.versionCode is invalid")
@@ -422,6 +422,16 @@ def validate_embedded_assets(
         for key in ("wallpaper", "startupSound", "clickSound", "backgroundMusic", "startupAnimation")
         if isinstance((owner := metadata.get(key)), dict)
     )
+    sidebar = metadata.get("sidebar", {})
+    if not isinstance(sidebar, dict):
+        raise ValidationFailure(f"{label}: invalid sidebar metadata")
+    sidebar_images = sidebar.get("images", {})
+    if not isinstance(sidebar_images, dict):
+        raise ValidationFailure(f"{label}: invalid sidebar images metadata")
+    for owner in sidebar_images.values():
+        if not isinstance(owner, dict):
+            raise ValidationFailure(f"{label}: invalid sidebar image metadata")
+        owners.append(owner)
     author = metadata.get("author")
     if isinstance(author, dict):
         asset = author.get("avatar")

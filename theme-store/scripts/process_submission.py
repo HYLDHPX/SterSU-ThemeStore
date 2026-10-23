@@ -168,7 +168,7 @@ def parse_manifest(raw: str, issue_author: str) -> dict:
     version_name = clean_text(theme.get("versionName"), "version name", 40)
     if theme.get("packageSchema") != PACKAGE_SCHEMA:
         raise ValidationFailure("package schema is unsupported")
-    package_version = required_integer(theme.get("packageVersion"), "package version", 1, 6)
+    package_version = required_integer(theme.get("packageVersion"), "package version", 1, 7)
     minimum = required_integer(
         theme.get("minManagerVersionCode"),
         "minimum Manager version",

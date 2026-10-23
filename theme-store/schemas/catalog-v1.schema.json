@@ -72,7 +72,7 @@
         "versionCode": { "type": "integer", "minimum": 1 },
         "versionName": { "type": "string", "minLength": 1, "maxLength": 40 },
         "packageSchema": { "const": "io.github.fixz.apkesu.theme" },
-        "packageVersion": { "type": "integer", "minimum": 1, "maximum": 6 },
+        "packageVersion": { "type": "integer", "minimum": 1, "maximum": 7 },
         "minManagerVersionCode": { "type": "integer", "minimum": 1 },
         "maxManagerVersionCode": {
           "oneOf": [

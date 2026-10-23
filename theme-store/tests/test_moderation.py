@@ -4,6 +4,7 @@ import hashlib
 import io
 import json
 import sys
+import tempfile
 import unittest
 import zipfile
 from pathlib import Path
@@ -18,6 +19,7 @@ from moderation_common import (  # noqa: E402
     validate_registry,
 )
 from approve_creator import validate_creator_approval  # noqa: E402
+from prepare_release import download_and_verify_package  # noqa: E402
 from process_submission import (  # noqa: E402
     DEFAULT_COVER_URL,
     parse_manifest,
@@ -85,18 +87,69 @@ class ModerationTest(unittest.TestCase):
         with self.assertRaises(ValidationFailure):
             parse_manifest(json.dumps(manifest), "alice-theme")
 
-    def test_manifest_accepts_v5_and_v6_packages(self) -> None:
+    def test_manifest_accepts_v4_through_v7_packages(self) -> None:
         manifest = self.valid_manifest()
-        parsed = parse_manifest(json.dumps(manifest), "alice-theme")
-        self.assertEqual(4, parsed["packageVersion"])
+        for version in range(4, 8):
+            with self.subTest(version=version):
+                manifest["theme"]["packageVersion"] = version
+                parsed = parse_manifest(json.dumps(manifest), "alice-theme")
+                self.assertEqual(version, parsed["packageVersion"])
 
-        manifest["theme"]["packageVersion"] = 5
-        parsed = parse_manifest(json.dumps(manifest), "alice-theme")
-        self.assertEqual(5, parsed["packageVersion"])
+    def test_manifest_rejects_future_package_version(self) -> None:
+        manifest = self.valid_manifest()
+        manifest["theme"]["packageVersion"] = 8
+        with self.assertRaises(ValidationFailure):
+            parse_manifest(json.dumps(manifest), "alice-theme")
 
-        manifest["theme"]["packageVersion"] = 6
-        parsed = parse_manifest(json.dumps(manifest), "alice-theme")
-        self.assertEqual(6, parsed["packageVersion"])
+    def test_catalog_accepts_v7_package(self) -> None:
+        catalog = self.catalog_with_existing_theme()
+        catalog["themes"][0]["packageVersion"] = 7
+        validate_semantics(catalog, None)
+
+    def test_release_accepts_v7_package(self) -> None:
+        package = io.BytesIO()
+        with zipfile.ZipFile(package, "w") as archive:
+            archive.writestr("theme.json", json.dumps({
+                "schema": "io.github.fixz.apkesu.theme",
+                "version": 7,
+                "author": {"realName": "", "gender": "unspecified"},
+            }))
+        payload = package.getvalue()
+        with tempfile.TemporaryDirectory() as directory, patch(
+            "prepare_release.open_remote", return_value=io.BytesIO(payload)
+        ):
+            result = download_and_verify_package(
+                theme_id="test-sidebar", version_code=1, package_version=7,
+                source_url="https://github.com/owner/themes/releases/download/v1/test.kstheme",
+                asset_name="test-sidebar-v1.kstheme", sha256=hashlib.sha256(payload).hexdigest(),
+                size_bytes=len(payload), output_dir=Path(directory),
+            )
+            self.assertEqual(payload, result.read_bytes())
+
+    def test_catalog_rejects_future_package_version(self) -> None:
+        catalog = self.catalog_with_existing_theme()
+        catalog["themes"][0]["packageVersion"] = 8
+        with self.assertRaises(ValidationFailure):
+            validate_semantics(catalog, None)
+
+    def test_sidebar_accepts_embedded_image(self) -> None:
+        metadata = {"sidebar": {"images": {"avatar": {"asset": {"path": "assets/avatar.png"}}}}}
+        validate_embedded_assets(metadata, {"assets/avatar.png"}, "package")
+
+    def test_sidebar_rejects_missing_embedded_image(self) -> None:
+        metadata = {"sidebar": {"images": {"avatar": {"asset": {"path": "assets/missing.png"}}}}}
+        with self.assertRaises(ValidationFailure):
+            validate_embedded_assets(metadata, set(), "package")
+
+    def test_sidebar_rejects_device_specific_image_uri(self) -> None:
+        metadata = {"sidebar": {"images": {"avatar": {"uri": "content://local/avatar"}}}}
+        with self.assertRaises(ValidationFailure):
+            validate_embedded_assets(metadata, set(), "package")
+
+    def test_sidebar_rejects_invalid_image_metadata(self) -> None:
+        for sidebar in (None, [], {"images": []}, {"images": {"avatar": None}}):
+            with self.subTest(sidebar=sidebar), self.assertRaises(ValidationFailure):
+                validate_embedded_assets({"sidebar": sidebar}, set(), "package")
 
     def test_manifest_uses_first_screenshot_when_cover_is_blank(self) -> None:
         manifest = self.valid_manifest()

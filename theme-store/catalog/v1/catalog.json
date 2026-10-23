@@ -1,12 +1,44 @@
 {
   "schema": "io.github.fixz.apkesu.theme-catalog",
   "version": 1,
-  "generatedAt": 1790845568610,
+  "generatedAt": 1792758310119,
   "categories": [
     {
       "id": "anime",
       "name": "动漫主题"
     }
   ],
-  "themes": []
+  "themes": [
+    {
+      "id": "shiroko-memory-horizon-dark",
+      "name": "白子（暗色）",
+      "author": {
+        "id": "hyldhpx",
+        "name": "回忆里的海平线",
+        "profileUrl": "https://github.com/hyldhpx",
+        "avatarUrl": "https://github.com/fixz232/SterSU-ThemeStore/releases/download/theme-shiroko-memory-horizon-dark-v1/author.png",
+        "bio": ""
+      },
+      "description": "白子主题的暗色配色，包含全局壁纸、侧栏头像及主页状态卡片图片，适用于 miuix（美化版）。",
+      "category": "anime",
+      "tags": ["白子", "暗色", "侧栏", "miuix（美化版）"],
+      "versionCode": 1,
+      "versionName": "beta0.0.1",
+      "packageSchema": "io.github.fixz.apkesu.theme",
+      "packageVersion": 7,
+      "minManagerVersionCode": 33200,
+      "maxManagerVersionCode": null,
+      "coverUrl": "https://github.com/fixz232/SterSU-ThemeStore/releases/download/theme-shiroko-memory-horizon-dark-v1/cover.webp",
+      "screenshots": [],
+      "downloadUrl": "https://github.com/fixz232/SterSU-ThemeStore/releases/download/theme-shiroko-memory-horizon-dark-v1/shiroko-memory-horizon-dark-v1.kstheme",
+      "sha256": "27d6988a69373a450fa22aa7747ec45989a4636a85de5376bae388be25c79159",
+      "sizeBytes": 1229086,
+      "license": "LicenseRef-All-Rights-Reserved",
+      "changelog": "首次发布 beta0.0.1 暗色主题。保留原始侧栏、壁纸和状态卡片图片；移除作者真实姓名及设备本地路径。",
+      "publishedAt": 1792758310119,
+      "status": "published",
+      "featured": false,
+      "downloadCount": 0
+    }
+  ]
 }

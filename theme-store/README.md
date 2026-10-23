@@ -2,7 +2,7 @@
 
 The cloud store is a signed-by-hash catalog hosted in this repository. Theme packages are kept in GitHub Releases so large binary files do not inflate Git history.
 
-> Recovery status (2026-10-01): the previous cloud-theme Release assets were not present in the local backup and their old URLs return 404. The catalog remains intentionally empty until verified `.kstheme` files are republished; broken download entries are not retained.
+> Cloud-theme publishing resumed on 2026-10-23 with the verified Shiroko dark theme by hyldhpx (beta0.0.1, package schema v7). The original embedded images are preserved; private author fields and device-local URIs are removed before publication. No additional artwork reuse license was supplied, so the entry uses `LicenseRef-All-Rights-Reserved` rather than assigning an open license.
 
 ## Trust model
 

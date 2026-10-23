@@ -91,7 +91,7 @@ def download_and_verify_package(
 ) -> Path:
     if not THEME_ID_RE.fullmatch(theme_id):
         raise ValidationFailure("invalid theme id")
-    if version_code < 1 or not 1 <= package_version <= 6:
+    if version_code < 1 or not 1 <= package_version <= 7:
         raise ValidationFailure("invalid version")
     if not ASSET_RE.fullmatch(asset_name):
         raise ValidationFailure("invalid release asset name")
