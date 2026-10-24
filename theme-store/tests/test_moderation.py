@@ -179,6 +179,63 @@ class ModerationTest(unittest.TestCase):
         ):
             validate_image("https://example.com/cover.png")
 
+    def test_submission_without_images_produces_a_valid_catalog(self) -> None:
+        for cover in ("", " \t ", None, "omitted"):
+            with self.subTest(cover=cover):
+                manifest = self.valid_manifest()
+                if cover == "omitted":
+                    del manifest["theme"]["coverUrl"]
+                else:
+                    manifest["theme"]["coverUrl"] = cover
+                manifest["theme"]["screenshots"] = []
+                event = self.submission_event(manifest=manifest)
+                submission = validate_submission_event(event, "fixz232", self.valid_registry())
+                catalog = self.catalog_with_existing_theme()
+                catalog["themes"] = []
+
+                update_catalog(catalog, submission, "fixz232/SterSU-ThemeStore", 200)
+                validate_semantics(catalog, None)
+
+                self.assertEqual(DEFAULT_COVER_URL, catalog["themes"][0]["coverUrl"])
+                self.assertEqual([], catalog["themes"][0]["screenshots"])
+
+    def test_manifest_accepts_one_collage_without_a_separate_cover(self) -> None:
+        collage = "https://raw.githubusercontent.com/alice-theme/themes/main/four-page-collage.jpg"
+        manifest = self.valid_manifest()
+        del manifest["theme"]["coverUrl"]
+        manifest["theme"]["screenshots"] = [collage]
+
+        parsed = parse_manifest(json.dumps(manifest), "alice-theme")
+
+        self.assertEqual(collage, parsed["coverUrl"])
+        self.assertEqual([collage], parsed["screenshots"])
+
+    def test_manifest_accepts_eight_optional_screenshots(self) -> None:
+        screenshots = [
+            f"https://raw.githubusercontent.com/alice-theme/themes/main/screen-{index}.png"
+            for index in range(8)
+        ]
+        manifest = self.valid_manifest()
+        manifest["theme"]["screenshots"] = screenshots
+
+        parsed = parse_manifest(json.dumps(manifest), "alice-theme")
+
+        self.assertEqual(screenshots, parsed["screenshots"])
+
+    def test_manifest_rejects_too_many_or_duplicate_screenshots(self) -> None:
+        screenshot = "https://raw.githubusercontent.com/alice-theme/themes/main/screen.png"
+        too_many = [
+            f"https://raw.githubusercontent.com/alice-theme/themes/main/screen-{index}.png"
+            for index in range(9)
+        ]
+        for screenshots in (too_many, [screenshot, screenshot]):
+            with self.subTest(screenshots=screenshots):
+                manifest = self.valid_manifest()
+                manifest["theme"]["screenshots"] = screenshots
+
+                with self.assertRaises(ValidationFailure):
+                    parse_manifest(json.dumps(manifest), "alice-theme")
+
     def test_remote_image_rejects_first_byte_over_limit(self) -> None:
         payload = b"\x89PNG\r\n\x1a\n" + b"x" * 25
         response = self.remote_response(payload)
@@ -556,8 +613,10 @@ class ModerationTest(unittest.TestCase):
         *,
         sender: str = "fixz232",
         issue_author: str = "alice-theme",
+        manifest: dict | None = None,
     ) -> dict:
-        manifest = self.valid_manifest()
+        if manifest is None:
+            manifest = self.valid_manifest()
         theme = manifest["theme"]
         return {
             "sender": {"login": sender},
