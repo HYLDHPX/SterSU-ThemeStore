@@ -12,7 +12,8 @@ import tempfile
 import urllib.request
 import zipfile
 from pathlib import Path, PurePosixPath
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
+from urllib.response import addinfourl
 
 CATALOG_SCHEMA = "io.github.fixz.apkesu.theme-catalog"
 PACKAGE_SCHEMA = "io.github.fixz.apkesu.theme"
@@ -68,6 +69,16 @@ def is_standalone_repository_migration(old_url: object, new_url: object) -> bool
         == ["fixz232", "SterSU-ThemeStore", "releases", "download"]
         and old_parts[5:] == new_parts[5:]
         and all(old_parts[5:])
+    )
+
+
+def is_release_to_repository_migration(old: dict, new: dict) -> bool:
+    theme_id = new["id"]
+    version = new["versionCode"]
+    filename = f"{theme_id}-v{version}.kstheme"
+    return (
+        old.get("downloadUrl") == f"https://github.com/fixz232/SterSU-ThemeStore/releases/download/theme-{theme_id}-v{version}/{filename}"
+        and new.get("downloadUrl") == f"https://raw.githubusercontent.com/fixz232/SterSU-ThemeStore/main/theme-store/packages/{theme_id}/v{version}/{filename}"
     )
 
 
@@ -189,10 +200,10 @@ def validate_semantics(catalog: dict, previous: dict | None) -> list[dict]:
             }
             repository_migration = (
                 changed_fields == {"downloadUrl"}
-                and is_standalone_repository_migration(
+                and (is_standalone_repository_migration(
                     old.get("downloadUrl"),
                     theme.get("downloadUrl"),
-                )
+                ) or is_release_to_repository_migration(old, theme))
             )
             if (
                 changed_fields
@@ -238,10 +249,30 @@ def open_remote(url: str):
     return response
 
 
-def validate_image(url: str) -> None:
+def open_asset(url: str, repository_root: Path | None = None, repository: str | None = None):
+    prefix = f"https://raw.githubusercontent.com/{repository}/main/"
+    if repository_root is not None and repository and url.startswith(prefix):
+        relative = unquote(url[len(prefix):])
+        parts = relative.split("/")
+        if (
+            not relative.startswith(("theme-store/packages/", "theme-store/assets/"))
+            or any(part in {"", ".", ".."} for part in parts)
+            or "\\" in relative or "?" in relative or "#" in relative
+        ):
+            raise ValidationFailure("invalid local repository asset path")
+        path = repository_root / relative
+        if repository_root.resolve() not in path.resolve().parents:
+            raise ValidationFailure("repository asset path escapes checkout")
+        if path.stat().st_size > 100 * 1024 * 1024:
+            raise ValidationFailure("repository assets must be at most 100 MiB")
+        return addinfourl(path.open("rb"), {"Content-Length": str(path.stat().st_size)}, url)
+    return open_remote(url)
+
+
+def validate_image(url: str, repository_root: Path | None = None, repository: str | None = None) -> None:
     header = bytearray()
     total = 0
-    with open_remote(url) as response:
+    with open_asset(url, repository_root, repository) as response:
         declared = response.headers.get("Content-Length")
         if declared and int(declared) > MAX_IMAGE_BYTES:
             raise ValidationFailure(f"remote image exceeds {MAX_IMAGE_BYTES} bytes: {url}")
@@ -567,12 +598,12 @@ def validate_font_asset(
         raise ValidationFailure(f"{label}: custom font SHA-256 mismatch")
 
 
-def validate_package(theme: dict) -> None:
+def validate_package(theme: dict, repository_root: Path | None = None, repository: str | None = None) -> None:
     expected_size = theme["sizeBytes"]
     with tempfile.NamedTemporaryFile(suffix=".kstheme") as package_file:
         digest = hashlib.sha256()
         copied = 0
-        with open_remote(theme["downloadUrl"]) as response:
+        with open_asset(theme["downloadUrl"], repository_root, repository) as response:
             declared = response.headers.get("Content-Length")
             if declared and int(declared) != expected_size:
                 raise ValidationFailure(f"{theme['id']}: remote Content-Length mismatch")
@@ -632,7 +663,7 @@ def validate_package(theme: dict) -> None:
             raise ValidationFailure(f"{theme['id']}: invalid ZIP package") from error
 
 
-def validate_remote_assets(themes: list[dict], previous: dict | None) -> None:
+def validate_remote_assets(themes: list[dict], previous: dict | None, repository_root: Path | None = None, repository: str | None = None) -> None:
     previous_by_id = {
         item.get("id"): item
         for item in (previous or {}).get("themes", [])
@@ -645,16 +676,19 @@ def validate_remote_assets(themes: list[dict], previous: dict | None) -> None:
             theme.get(field) == old.get(field)
             for field in ("downloadUrl", "sha256", "sizeBytes", "packageVersion")
         )
-        if not package_unchanged:
+        if not package_unchanged or repository_root is not None:
             print(f"checking package {theme['id']}...", flush=True)
-            validate_package(theme)
-        for image_url in [theme["coverUrl"], *theme["screenshots"]]:
+            validate_package(theme, repository_root, repository)
+        image_urls = [theme["coverUrl"], *theme["screenshots"]]
+        if theme.get("author", {}).get("avatarUrl"):
+            image_urls.append(theme["author"]["avatarUrl"])
+        for image_url in image_urls:
             if image_url in checked_images:
                 continue
             old_images = [] if not old else [old.get("coverUrl"), *old.get("screenshots", [])]
-            if image_url not in old_images:
+            if image_url not in old_images or repository_root is not None:
                 print(f"checking image {image_url}...", flush=True)
-                validate_image(image_url)
+                validate_image(image_url, repository_root, repository)
             checked_images.add(image_url)
 
 
@@ -664,6 +698,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--schema", type=Path)
     parser.add_argument("--previous", type=Path)
     parser.add_argument("--check-remote", action="store_true")
+    parser.add_argument("--repository-root", type=Path)
+    parser.add_argument("--repository")
     return parser.parse_args()
 
 
@@ -675,7 +711,9 @@ def main() -> int:
         validate_with_schema(catalog, args.schema)
         themes = validate_semantics(catalog, previous)
         if args.check_remote:
-            validate_remote_assets(themes, previous)
+            if bool(args.repository_root) != bool(args.repository):
+                raise ValidationFailure("--repository-root and --repository must be supplied together")
+            validate_remote_assets(themes, previous, args.repository_root, args.repository)
         print(
             f"catalog valid: {len(themes)} themes, "
             f"{len(catalog.get('categories', []))} categories"

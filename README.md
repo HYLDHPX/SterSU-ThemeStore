@@ -1,12 +1,12 @@
 # SterSU Theme Store
 
-This repository is the standalone backend for the SterSU cloud theme store. It owns the public catalog, creator registry, review Issues, moderation workflows, release publishing, and download statistics. The Android Manager consumes these files remotely and keeps bundled/cache fallbacks for offline use.
+This repository is the standalone backend for the SterSU cloud theme store. It owns the public catalog, creator registry, review Issues, moderation workflows, repository asset publishing, and download statistics. The Android Manager consumes these files remotely and keeps bundled/cache fallbacks for offline use.
 
-The cloud store is a signed-by-hash catalog hosted in this repository. Theme packages are kept in GitHub Releases so large binary files do not inflate Git history.
+The cloud store is a signed-by-hash catalog hosted in this repository. Theme packages and preview media are stored directly in versioned repository directories. The catalog uses raw GitHub file URLs; new official theme Releases are no longer created.
 
 The repository also publishes SterSU interface styles and declarative Manager plugin descriptors. See `interface-styles/` and `plugin-store/`; these packages contain data-only resources and are validated by the Manager before installation.
 
-> Cloud-theme publishing resumed on 2026-10-23 with the verified Shiroko dark theme by hyldhpx. Packages remain in GitHub Releases; the catalog records their exact byte count and SHA-256. Theme artwork retains its own rights and is not relicensed by this repository's software license.
+> Cloud-theme publishing resumed on 2026-10-23 with the verified Shiroko dark theme by hyldhpx. On 2026-10-25, existing packages and preview media were moved into this repository without changing their bytes, versions, or SHA-256. Historical Releases remain available for older catalogs. Theme artwork retains its own rights and is not relicensed by this repository's software license.
 
 ## Trust model
 
@@ -32,28 +32,38 @@ Run **Moderate cloud theme creators and submissions** once with `workflow_dispat
 
 ## Publishing a theme as an approved creator
 
-1. In Creator Center, use **Create cloud-safe package from current theme**, or select any local file up to 500 MiB. The picker does not restrict the original filename, extension, or MIME type, but the bytes must contain a valid cloud-safe SterSU theme package. The Manager copies and validates one immutable snapshot, then computes its exact byte count and SHA-256. Device storage and GitHub Release limits still apply.
-2. Export the validated snapshot as a standard `.kstheme` file and upload those exact bytes to a public GitHub Release under the approved creator's GitHub account. Paste the `.kstheme` Release URL into Creator Center. The app and moderation workflow reject package URLs owned by another account.
+1. In Creator Center, use **Create cloud-safe package from current theme**, or select any local file up to 500 MiB. The picker does not restrict the original filename, extension, or MIME type, but the bytes must contain a valid cloud-safe SterSU theme package. The Manager copies and validates one immutable snapshot, then computes its exact byte count and SHA-256. Local import supports up to 500 MiB, but repository publishing accepts files up to 100 MiB. Reduce embedded media if necessary; Git LFS pointers are not theme packages.
+2. Export the validated snapshot as a standard `.kstheme` file and commit those exact bytes to a public GitHub repository under the approved creator's account. Paste the `https://raw.githubusercontent.com/<account>/<repository>/<ref>/<file>.kstheme` URL into Creator Center. The app and moderation workflow reject package URLs owned by another account.
 3. Add screenshots when available, plus the license, compatibility range, version, and an existing or custom category. The cover is optional: the first screenshot is used when present, otherwise SterSU supplies its default cover.
-4. Run remote verification. The Manager downloads the Release asset and requires its byte count and SHA-256 to match the selected local package.
+4. Run remote verification. The Manager downloads the repository file and requires its byte count and SHA-256 to match the selected local package.
 5. Submit the generated GitHub Issue. The Issue author must be the approved creator recorded in the manifest.
 6. `fixz232` reviews the visible metadata and adds `theme-approved` only when publication is allowed.
-7. GitHub Actions repeats all security checks, creates the canonical Release, adds a custom category when needed, updates the catalog, marks the Issue `theme-published`, and closes it.
+7. GitHub Actions repeats all security checks, commits the verified package and updated catalog together, adds a custom category when needed, updates the catalog, marks the Issue `theme-published`, and closes it.
 
-The app intentionally does not upload directly to the central repository: doing so would require embedding a GitHub write token or an OAuth service. Creator-owned Releases keep publishing credentials outside the APK while still providing a complete reviewed upload path.
+The app intentionally does not upload directly to the central repository: doing so would require embedding a GitHub write token or an OAuth service. Creator-owned repositories keep publishing credentials outside the APK; legacy creator Release URLs remain accepted for compatibility while still providing a complete reviewed upload path.
 
 The ordinary local export remains suitable for backup and device-to-device transfer, but it may preserve local `content://` references and private author fields for that purpose. Do not upload that file directly. The publishing workflow rejects device-specific URIs, a non-empty author real name, a non-`unspecified` gender, or any configured media that was not embedded in the cloud-safe package.
 
 ## Maintainer publishing
 
 1. Export a `.kstheme` package from **Theme center > Import and export**.
-2. Prepare a 16:9 cover and up to eight screenshots. Each image or video asset may be up to 500 MiB.
-3. Upload the package to a temporary GitHub Release or another GitHub-hosted URL.
-4. Ask a maintainer to run **Publish cloud theme** with the temporary URL, exact size, SHA-256, and package metadata. The workflow verifies the bytes and creates the canonical release asset.
+2. Optionally prepare a cover and up to eight screenshots or collages; no fixed resolution or aspect ratio is required. Images can also be omitted. Repository files must be at most 100 MiB.
+3. Commit the package to a public GitHub repository and copy its raw file URL.
+4. Ask a maintainer to run **Publish cloud theme** with the temporary URL, exact size, SHA-256, and package metadata. The workflow verifies the bytes and stores the verified package in `theme-store/packages/<theme-id>/v<versionCode>/<theme-id>-v<versionCode>.kstheme`. This manual workflow stages the package; catalog review is still required.
 5. Add or update the entry in `catalog/v1/catalog.json` using that canonical URL. Increase `versionCode` whenever the package bytes, URL, hash, size, or version name changes.
 6. Open a pull request. The catalog workflow validates the schema, URLs, compatibility range, remote media, package size, SHA-256, ZIP paths, and embedded `theme.json`.
 
-The canonical release tag is `theme-<theme-id>-v<versionCode>`. The catalog `downloadUrl` must point to an asset under that tag.
+Repository layout:
+
+```text
+theme-store/packages/<theme-id>/v<versionCode>/<theme-id>-v<versionCode>.kstheme
+theme-store/assets/<theme-id>/v<versionCode>/cover.webp
+theme-store/assets/<theme-id>/v<versionCode>/author.png
+```
+
+Use raw GitHub URLs for these files. Never overwrite a published package with different bytes: increase `versionCode` and create a new directory. The validator permits only the exact, byte-identical Release-to-repository relocation without a version bump. Existing Releases are retained for older clients.
+
+The moderation workflow copies verified creator packages into this repository automatically. Keep preview media in `theme-store/assets/` when publishing manually. No GitHub write credentials are stored in the Manager.
 
 ## Public author data
 
@@ -65,11 +75,11 @@ Cloud entries contain only an explicit public author ID, display name, optional 
 - `versionCode`: monotonically increasing package revision.
 - `packageSchema` / `packageVersion`: must match the exported `.kstheme` package.
 - `minManagerVersionCode` / `maxManagerVersionCode`: supported Manager range; use `null` for no upper limit.
-- `sha256` / `sizeBytes`: exact release asset identity.
+- `sha256` / `sizeBytes`: exact package identity.
 - `license`: SPDX license identifier for the theme assets.
 - `status`: `published` or `deprecated`.
 - `featured`: curated placement flag.
-- `downloadCount`: maintained by the scheduled statistics workflow.
+- `downloadCount`: preserved historical download count. GitHub raw files do not expose Release-style download counts; the legacy statistics workflow updates only entries still hosted in Releases.
 
 Run the local validator before submitting:
 
@@ -79,7 +89,7 @@ python theme-store/scripts/validate_catalog.py \
   --schema theme-store/schemas/catalog-v1.schema.json
 ```
 
-Add `--check-remote` after the package and image URLs are publicly reachable.
+For a PR containing new repository assets, add `--check-remote --repository-root . --repository fixz232/SterSU-ThemeStore` to validate the checked-out files before they are published. Use `--check-remote` alone to verify live public downloads after pushing.
 
 Validate creator moderation changes with:
 

@@ -47,7 +47,7 @@ body:
           required: true
         - label: I removed private identity fields, credentials, and device-specific data.
           required: true
-        - label: The GitHub Release package URL is public and its bytes exactly match the locally verified package.
+        - label: The public GitHub repository file URL (or legacy Release URL) is accessible and its bytes exactly match the locally verified package.
           required: true
-        - label: I tested import, apply, and rollback with a supported ApkeSU Manager version.
+        - label: I tested import, apply, and rollback with a supported SterSU Manager version.
           required: true

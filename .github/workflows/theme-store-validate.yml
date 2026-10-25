@@ -58,6 +58,8 @@ jobs:
             theme-store/catalog/v1/catalog.json \
             --schema theme-store/schemas/catalog-v1.schema.json \
             --check-remote \
+            --repository-root . \
+            --repository "$GITHUB_REPOSITORY" \
             "${EXTRA[@]}"
 
       - name: Validate creator registry

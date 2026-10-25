@@ -72,17 +72,17 @@ class ModerationTest(unittest.TestCase):
         with self.assertRaises(ValidationFailure):
             parse_manifest(json.dumps(manifest), "alice-theme")
 
-    def test_manifest_accepts_exact_500_mib_package(self) -> None:
+    def test_manifest_accepts_exact_100_mib_repository_package(self) -> None:
         manifest = self.valid_manifest()
-        manifest["theme"]["sizeBytes"] = 500 * 1024 * 1024
+        manifest["theme"]["sizeBytes"] = 100 * 1024 * 1024
 
         parsed = parse_manifest(json.dumps(manifest), "alice-theme")
 
-        self.assertEqual(500 * 1024 * 1024, parsed["sizeBytes"])
+        self.assertEqual(100 * 1024 * 1024, parsed["sizeBytes"])
 
-    def test_manifest_rejects_package_over_500_mib(self) -> None:
+    def test_manifest_rejects_package_over_repository_limit(self) -> None:
         manifest = self.valid_manifest()
-        manifest["theme"]["sizeBytes"] = 500 * 1024 * 1024 + 1
+        manifest["theme"]["sizeBytes"] = 100 * 1024 * 1024 + 1
 
         with self.assertRaises(ValidationFailure):
             parse_manifest(json.dumps(manifest), "alice-theme")
@@ -515,6 +515,7 @@ class ModerationTest(unittest.TestCase):
 
     def test_catalog_allows_exact_standalone_repository_migration(self) -> None:
         current = self.catalog_with_existing_theme()
+        current["themes"][0]["downloadUrl"] = "https://github.com/fixz232/SterSU-ThemeStore/releases/download/theme-aurora-night-v1/aurora-night-v1.kstheme"
         previous = json.loads(json.dumps(current))
         previous["themes"][0]["downloadUrl"] = previous["themes"][0][
             "downloadUrl"

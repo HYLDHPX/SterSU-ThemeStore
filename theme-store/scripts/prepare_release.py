@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Download and verify one package before publishing a canonical GitHub Release."""
+"""Download and verify a package before storing it in the theme repository."""
 
 from __future__ import annotations
 
@@ -10,6 +10,8 @@ import re
 import sys
 import zipfile
 from pathlib import Path
+
+from repository_assets import MAX_REPOSITORY_FILE_BYTES, stage_package
 
 from validate_catalog import (
     MAX_PACKAGE_BYTES,
@@ -37,6 +39,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sha256", required=True)
     parser.add_argument("--size-bytes", required=True, type=int)
     parser.add_argument("--output-dir", required=True, type=Path)
+    parser.add_argument("--repository-root", type=Path)
     return parser.parse_args()
 
 
@@ -126,6 +129,8 @@ def download_and_verify_package(
 def main() -> int:
     args = parse_args()
     try:
+        if args.repository_root and args.size_bytes > MAX_REPOSITORY_FILE_BYTES:
+            raise ValidationFailure("repository packages must be at most 100 MiB")
         output = download_and_verify_package(
             theme_id=args.theme_id,
             version_code=args.version_code,
@@ -136,6 +141,8 @@ def main() -> int:
             size_bytes=args.size_bytes,
             output_dir=args.output_dir,
         )
+        if args.repository_root:
+            output = stage_package(output, args.repository_root, args.theme_id, args.version_code)
         print(output)
         return 0
     except (ValidationFailure, OSError, ValueError, json.JSONDecodeError) as error:

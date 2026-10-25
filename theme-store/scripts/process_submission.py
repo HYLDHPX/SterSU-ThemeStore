@@ -8,7 +8,7 @@ import json
 import sys
 import time
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 from moderation_common import (
     SUBMISSION_SCHEMA,
@@ -21,11 +21,11 @@ from moderation_common import (
     write_object,
 )
 from prepare_release import download_and_verify_package
+from repository_assets import MAX_REPOSITORY_FILE_BYTES, package_relative_path, repository_url, stage_package
 from validate_catalog import (
     CATEGORY_RE,
     ID_RE,
     LICENSE_RE,
-    MAX_PACKAGE_BYTES,
     PACKAGE_SCHEMA,
     SHA_RE,
     ValidationFailure,
@@ -73,6 +73,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--repository", required=True)
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--result", required=True, type=Path)
+    parser.add_argument("--repository-root", type=Path, default=Path(__file__).resolve().parents[2])
     return parser.parse_args()
 
 
@@ -103,18 +104,22 @@ def validate_creator_release_url(value: str, github_login: str) -> None:
     parsed = urlparse(value)
     raw_parts = parsed.path.split("/")
     if raw_parts[0] or any(not part for part in raw_parts[1:]):
-        raise ValidationFailure("package URL has an invalid GitHub Release path")
+        raise ValidationFailure("package URL has an invalid GitHub file path")
     parts = raw_parts[1:]
+    host = (parsed.hostname or "").lower()
+    repository_file = host == "raw.githubusercontent.com" and len(parts) >= 4
+    legacy_release = (
+        host == "github.com" and len(parts) >= 6
+        and parts[2:4] == ["releases", "download"]
+    )
     if (
-        (parsed.hostname or "").lower() != "github.com"
-        or len(parts) < 6
+        not (repository_file or legacy_release)
         or parts[0].lower() != github_login
-        or parts[2] != "releases"
-        or parts[3] != "download"
-        or any(part in {".", ".."} for part in parts[4:])
+        or parsed.query or parsed.fragment or parsed.port not in (None, 443)
+        or any(unquote(part) in {".", ".."} or "/" in unquote(part) or "\\" in unquote(part) for part in parts)
     ):
         raise ValidationFailure(
-            "package must be uploaded to a Release under the creator's GitHub account"
+            "package must be a public repository file under the creator's GitHub account (legacy Releases are also accepted)"
         )
 
 
@@ -199,7 +204,7 @@ def parse_manifest(raw: str, issue_author: str) -> dict:
     sha256 = clean_text(theme.get("sha256"), "SHA-256", 64).lower()
     if not SHA_RE.fullmatch(sha256):
         raise ValidationFailure("SHA-256 is invalid")
-    size_bytes = required_integer(theme.get("sizeBytes"), "package size", 1, MAX_PACKAGE_BYTES)
+    size_bytes = required_integer(theme.get("sizeBytes"), "repository package size (maximum 100 MiB)", 1, MAX_REPOSITORY_FILE_BYTES)
     license_id = clean_text(theme.get("license"), "asset license", 48)
     if not LICENSE_RE.fullmatch(license_id):
         raise ValidationFailure("asset license is invalid")
@@ -331,7 +336,7 @@ def update_catalog(catalog: dict, submission: dict, repository: str, published_a
         raise ValidationFailure("invalid GitHub repository name")
     tag = f"theme-{submission['id']}-v{submission['versionCode']}"
     asset_name = f"{submission['id']}-v{submission['versionCode']}.kstheme"
-    canonical_url = f"https://github.com/{repository}/releases/download/{tag}/{asset_name}"
+    canonical_url = repository_url(repository, package_relative_path(submission["id"], submission["versionCode"]))
     author = {
         "id": submission["author"]["github"],
         "name": submission["author"]["name"],
@@ -408,6 +413,7 @@ def main() -> int:
         for screenshot in submission["screenshots"]:
             validate_image(screenshot)
 
+        package_path = stage_package(package_path, args.repository_root, submission["id"], submission["versionCode"])
         write_object(args.catalog, catalog)
         result = {
             "themeId": submission["id"],

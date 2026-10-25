@@ -12,16 +12,16 @@ on:
         required: true
         type: string
       package_version:
-        description: .kstheme schema version (currently 5)
+        description: .kstheme schema version (currently 7)
         required: true
-        default: "5"
+        default: "7"
         type: string
       source_url:
         description: Public GitHub-hosted temporary .kstheme URL
         required: true
         type: string
       asset_name:
-        description: Canonical release asset filename ending in .kstheme
+        description: Source filename ending in .kstheme
         required: true
         type: string
       sha256:
@@ -36,11 +36,18 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: theme-store-catalog-write
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
 
       - uses: actions/setup-python@v6
         with:
@@ -64,21 +71,20 @@ jobs:
             --asset-name "$ASSET_NAME" \
             --sha256 "$EXPECTED_SHA256" \
             --size-bytes "$SIZE_BYTES" \
-            --output-dir /tmp/apkesu-theme-release
+            --output-dir /tmp/apkesu-theme-release \
+            --repository-root .
 
-      - name: Create canonical release
+      - name: Commit verified repository package
         env:
-          GH_TOKEN: ${{ github.token }}
           THEME_ID: ${{ inputs.theme_id }}
           VERSION_CODE: ${{ inputs.version_code }}
         run: |
-          TAG="theme-${THEME_ID}-v${VERSION_CODE}"
-          ASSET="$(find /tmp/apkesu-theme-release -maxdepth 1 -type f -name '*.kstheme' -print -quit)"
-          test -n "$ASSET"
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$ASSET" --clobber
-          else
-            gh release create "$TAG" "$ASSET" \
-              --title "Cloud theme ${THEME_ID} v${VERSION_CODE}" \
-              --notes "Verified ApkeSU cloud theme package."
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add theme-store/packages
+          if git diff --cached --quiet; then
+            exit 0
           fi
+          git commit -m "theme-store: Store ${THEME_ID} v${VERSION_CODE} package"
+          git pull --rebase origin main
+          git push origin HEAD:main

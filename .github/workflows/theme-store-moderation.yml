@@ -132,31 +132,17 @@ jobs:
             --output-dir /tmp/apkesu-theme-release \
             --result /tmp/apkesu-theme-result.json
 
-      - name: Create canonical release
+      - name: Commit catalog and verified package together
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TAG="$(python -c 'import json; print(json.load(open("/tmp/apkesu-theme-result.json"))["tag"])')"
-          ASSET="$(python -c 'import json; print(json.load(open("/tmp/apkesu-theme-result.json"))["packagePath"])')"
-          THEME_ID="$(python -c 'import json; print(json.load(open("/tmp/apkesu-theme-result.json"))["themeId"])')"
-          VERSION_CODE="$(python -c 'import json; print(json.load(open("/tmp/apkesu-theme-result.json"))["versionCode"])')"
-          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$ASSET" --repo "$GITHUB_REPOSITORY" --clobber
-          else
-            gh release create "$TAG" "$ASSET" --repo "$GITHUB_REPOSITORY" \
-              --title "Cloud theme ${THEME_ID} v${VERSION_CODE}" \
-              --notes "Reviewed by fixz232 and verified by the ApkeSU theme-store workflow."
-          fi
-
-      - name: Commit catalog update
+          THEME_TITLE: ${{ github.event.issue.title }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add theme-store/catalog/v1/catalog.json
+          git add theme-store/catalog/v1/catalog.json theme-store/packages
           if git diff --cached --quiet; then
             exit 0
           fi
-          git commit -m "theme-store: Publish ${{ github.event.issue.title }}"
+          git commit -m "theme-store: Publish $THEME_TITLE"
           git pull --rebase origin main
           git push origin HEAD:main
 
