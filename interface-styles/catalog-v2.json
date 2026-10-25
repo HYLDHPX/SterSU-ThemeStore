@@ -1,7 +1,7 @@
 {
   "schema": "io.github.fixz.apkesu.interface-style-catalog",
   "version": 3,
-  "generatedAt": 1791539922633,
+  "generatedAt": 1792921674534,
   "styles": [
     {
       "id": "liquid-glass",
@@ -254,6 +254,18 @@
       "sha256": "57dfbd427a5b8d331cdc6011552ef2cab28c86aeaa8729200a8b4e51c9300446",
       "sizeBytes": 1123,
       "accent": 4278246821
+    },
+    {
+      "id": "rain-environment",
+      "name": "雨境 / Rain",
+      "summary": "重构雨境：包含 miuix、Material、miuix（美化版）三种布局与五种天气场景，可独立定制卡片、顶部栏、导航栏和侧栏装饰，支持雨滴穿透、表面联动、日夜主题及声音；完整功能需 SterSU 3.3.3 或更新版本。",
+      "engine": "rain",
+      "variant": "light_rain",
+      "version": 3,
+      "downloadUrl": "https://raw.githubusercontent.com/fixz232/SterSU-ThemeStore/main/interface-styles/packages/rain-environment-20261025.ksstyle",
+      "sha256": "226cccc3f4d63e9301edaa0683c193e7e6e5a6f6a58759c1b843e004c493bb30",
+      "sizeBytes": 1148,
+      "accent": 4284384422
     }
   ]
 }
